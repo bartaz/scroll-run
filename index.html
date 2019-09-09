@@ -130,6 +130,7 @@
     left: 0.25rem;
     filter: drop-shadow(0px 0px .5rem rgba(0,0,0,0.7));
     transform: rotate(-1deg);
+    transition: 200ms;
   }
 
   .bubble::after {
@@ -145,6 +146,11 @@
 
     top: 50%;
     transform: translateY(-50%);
+  }
+
+  .bubble.silent {
+    opacity: 0;
+    transform: rotate(30deg) translate(-100%, -100%);
   }
 
   .hide {
@@ -277,7 +283,7 @@
 
       function countdown() {
         if (count) {
-          bubbleEl.innerHTML = `Start in: ${count}...`;
+          say(`Start in: ${count}...`);
           count -= 1;
           setTimeout(countdown, 1000);
         } else {
@@ -288,10 +294,35 @@
       countdown();
     }
 
+    let silenceTimeout;
+    function silence(immediate) {
+      clearTimeout(silenceTimeout);
+
+      if (immediate) {
+        bubbleEl.classList.add("silent");
+      } else {
+        silenceTimeout = setTimeout(function(){
+          bubbleEl.classList.add("silent");
+        }, 5000);
+      }
+    }
+
+
+    function say(something) {
+      clearTimeout(silenceTimeout);
+      bubbleEl.classList.remove("silent");
+      bubbleEl.innerHTML = something;
+    }
+
+    let silenceOnScroll = false;
+
     function startRun() {
       unlockScroll();
       showEl(scoreBoardEl);
-      bubbleEl.innerHTML = "Scroll!";
+      say("Scroll!");
+      silence();
+      silenceOnScroll = true;
+
       startTime = Date.now();
       timeCounter = setInterval(timeTick, 1);
 
@@ -300,7 +331,7 @@
 
     function finishRun() {
       clearInterval(timeCounter);
-      bubbleEl.innerHTML = `Finished in ${formatTime(time)}!`;
+      say(`Finished in ${formatTime(time)}!`);
       window.removeEventListener("scroll", scrollHandler);
     }
 
@@ -311,7 +342,10 @@
     }
 
     function checkpointReached() {
-      bubbleEl.innerHTML = "Scroll back!";
+      say("Scroll back!");
+      silence();
+      silenceOnScroll = true;
+
       checkpoint = true;
       startEl.classList.add("finish");
       titleEl.innerHTML = "FINISH";
@@ -328,6 +362,11 @@
     });
 
     function scrollHandler() {
+      if (silenceOnScroll) {
+        silence(true);
+        silenceOnScroll = false;
+      }
+
       if (
         window.innerHeight + window.pageYOffset >=
         document.body.offsetHeight
