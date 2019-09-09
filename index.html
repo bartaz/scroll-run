@@ -1,25 +1,33 @@
 <!DOCTYPE html>
 <title>Scroll Run!</title>
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<meta name="mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes" />
 <style>
   body {
     scrollbar-width: none; /* Firefox */
     -ms-overflow-style: none; /* IE 10+ */
   }
-
   ::-webkit-scrollbar {
     display: none; /* Webkit */
   }
 
+  * {
+    box-sizing: border-box;
+  }
+
   body {
     background: #76a53d;
+    margin: 0.5rem;
+  }
+
+  .wrap {
+    margin: 0 auto;
+    max-width: 42rem;
+    position: relative;
   }
 
   .track {
     background: #ab3627;
-    max-width: 500px;
-    margin: 0 auto;
     padding: 1rem;
 
     font-size: 2rem;
@@ -35,7 +43,11 @@
     min-height: 5rem;
   }
 
-  .track .segment.d100 {
+  .d10 {
+    height: 10rem;
+  }
+
+  .d100 {
     height: 100rem;
   }
 
@@ -65,16 +77,6 @@
     align-items: normal;
   }
 
-  .ui {
-    position: fixed;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    background: rgba(255, 255, 255, 0.5);
-    font-family: monospace;
-    font-size: 4rem;
-  }
-
   .score {
     position: fixed;
     top: 0;
@@ -84,16 +86,54 @@
     font-family: monospace;
     font-size: 4rem;
   }
+
+  .announcement {
+    position: fixed;
+    top: 15rem;
+    right: 0.5rem;
+    left: 0.5rem;
+  }
+
+  .bubble {
+    background: #fff;
+    border-radius: 0.5rem;
+    padding: 1rem;
+    color: black;
+    font-family: sans-serif;
+    font-size: 2rem;
+
+    position: absolute;
+    left: 0.25rem;
+  }
+
+  .bubble::after {
+    border: 0.5rem solid transparent;
+    content: "";
+    height: 0;
+    pointer-events: none;
+    position: absolute;
+    width: 0;
+
+    border-right-color: #fff;
+    right: 100%;
+
+    top: 50%;
+    transform: translateY(-50%);
+  }
 </style>
 
-<div class="track"></div>
-<div class="ui">START</div>
+<div class="track wrap"></div>
+<div class="announcement">
+  <div class="wrap"><div class="bubble">Choose your distance</div></div>
+</div>
+
 <div class="score">0</div>
+
 <script>
   document.addEventListener("DOMContentLoaded", function() {
     // DOM
     const trackEl = document.querySelector(".track");
-    const ui = document.querySelector(".ui");
+    const bubbleEl = document.querySelector(".bubble");
     const score = document.querySelector(".score");
     const body = document.body;
 
@@ -109,29 +149,46 @@
 
     function renderMenu() {
       trackEl.innerHTML = `
-                <div class="segment">
-                  <span class="title">SCROLL RUN</span>
-                </div>
-                <div class="menu">Choose your distance:</div>
-                <button class="segment" data-start="1000">
-                  <span class="label">1k</span>
-                </button>
-              `;
+                      <div class="segment">
+                        <span class="title">SCROLL RUN</span>
+                      </div>
+                      <button class="segment d10" data-start="1000">
+                        <span class="label">1k</span>
+                      </button>
+                      <button class="segment d10" data-start="5000">
+                        <span class="label">5k</span>
+                      </button>
+                      <button class="segment d10" data-start="10000">
+                        <span class="label">10k</span>
+                      </button>
+                      <button class="segment d10" data-start="21097">
+                        <span class="label">21k</span>
+                      </button>
+                      <button class="segment d10" data-start="42195">
+                        <span class="label">42k</span>
+                      </button>
+                    `;
     }
 
     function renderRun(distance) {
       let track = `
-              <div class="segment start">
-                <span class="title">START</span>
-              </div>
-              `;
+                    <div class="segment start">
+                      <span class="title">START</span>
+                    </div>
+                    `;
 
       for (i = 0; i < distance / 100; i++) {
+        let segmentDistance = (i + 1) * 100;
+
+        if (segmentDistance > distance) {
+          segmentDistance = distance;
+        }
+
         track += `
-                <div class="segment d100">
-                  <span class="label">${(i + 1) * 100}</span>
-                </div>
-                `;
+                      <div class="segment d100">
+                        <span class="label">${segmentDistance}</span>
+                      </div>
+                      `;
       }
 
       trackEl.innerHTML = track;
@@ -146,7 +203,7 @@
     function initRun(distance) {
       checkpoint = false;
       time = 0;
-      window.scrollTo(0,1);
+      window.scrollTo(0, 1);
 
       // TODO: falstart instead of lock? ;)
       lockScroll();
@@ -159,7 +216,7 @@
 
       function countdown() {
         if (count) {
-          ui.innerHTML = count;
+          bubbleEl.innerHTML = count;
           count -= 1;
           setTimeout(countdown, 1000);
         } else {
@@ -173,9 +230,18 @@
     function startRun() {
       unlockScroll();
 
-      ui.innerHTML = "SCROLL!";
+      bubbleEl.innerHTML = "SCROLL!";
       startTime = Date.now();
       timeCounter = setInterval(timeTick, 1);
+
+      window.addEventListener("scroll", scrollHandler);
+    }
+
+    function finishRun() {
+      bubbleEl.innerHTML = "FINISHED!";
+      clearInterval(timeCounter);
+      body.style.overflow = "hidden";
+      window.removeEventListener("scroll", scrollHandler);
     }
 
     function timeTick() {
@@ -194,20 +260,18 @@
       }
     });
 
-    window.addEventListener("scroll", function(ev) {
+    function scrollHandler() {
       if (
         window.innerHeight + window.pageYOffset >=
         document.body.offsetHeight
       ) {
-        ui.innerHTML = "SCROLL BACK!";
+        bubbleEl.innerHTML = "SCROLL BACK!";
         checkpoint = true;
       }
       if (window.pageYOffset <= 0 && checkpoint) {
-        ui.innerHTML = "FINISHED!";
-        clearInterval(timeCounter);
-        body.style.overflow = "hidden";
+        finishRun();
       }
-    });
+    }
 
     renderMenu();
   });
