@@ -1,4 +1,7 @@
-<!DOCTYPE html> <title>Scroll Run!</title>
+<!DOCTYPE html>
+<title>Scroll Run!</title>
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta name="mobile-web-app-capable" content="yes">
 <style>
   body {
     scrollbar-width: none; /* Firefox */
@@ -106,29 +109,29 @@
 
     function renderMenu() {
       trackEl.innerHTML = `
-              <div class="segment">
-                <span class="title">SCROLL RUN</span>
-              </div>
-              <div class="menu">Choose your distance:</div>
-              <button class="segment" data-start="1000">
-                <span class="label">1k</span>
-              </button>
-            `;
+                <div class="segment">
+                  <span class="title">SCROLL RUN</span>
+                </div>
+                <div class="menu">Choose your distance:</div>
+                <button class="segment" data-start="1000">
+                  <span class="label">1k</span>
+                </button>
+              `;
     }
 
     function renderRun(distance) {
       let track = `
-            <div class="segment start">
-              <span class="title">START</span>
-            </div>
-            `;
+              <div class="segment start">
+                <span class="title">START</span>
+              </div>
+              `;
 
       for (i = 0; i < distance / 100; i++) {
         track += `
-              <div class="segment d100">
-                <span class="label">${(i + 1) * 100}</span>
-              </div>
-              `;
+                <div class="segment d100">
+                  <span class="label">${(i + 1) * 100}</span>
+                </div>
+                `;
       }
 
       trackEl.innerHTML = track;
@@ -143,6 +146,7 @@
     function initRun(distance) {
       checkpoint = false;
       time = 0;
+      window.scrollTo(0,1);
 
       // TODO: falstart instead of lock? ;)
       lockScroll();
