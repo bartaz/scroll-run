@@ -1,0 +1,210 @@
+<!DOCTYPE html> <title>Scroll Run!</title>
+<style>
+  body {
+    scrollbar-width: none; /* Firefox */
+    -ms-overflow-style: none; /* IE 10+ */
+  }
+
+  ::-webkit-scrollbar {
+    display: none; /* Webkit */
+  }
+
+  body {
+    background: #76a53d;
+  }
+
+  .track {
+    background: #ab3627;
+    max-width: 500px;
+    margin: 0 auto;
+    padding: 1rem;
+
+    font-size: 2rem;
+    font-family: monospace;
+    color: white;
+  }
+
+  .track .segment {
+    position: relative;
+    border-bottom: 5px solid white;
+    display: flex;
+    flex-direction: column;
+    min-height: 5rem;
+  }
+
+  .track .segment.d100 {
+    height: 100rem;
+  }
+
+  .track .label {
+    font-size: 2rem;
+    font-family: monospace;
+    color: white;
+    margin-left: auto;
+    margin-top: auto;
+  }
+
+  .title {
+    font-size: 5rem;
+    text-align: center;
+  }
+
+  .menu {
+    text-align: center;
+    padding: 0.5rem 0;
+  }
+
+  button {
+    background: none;
+    border: 0;
+    display: block;
+    width: 100%;
+    align-items: normal;
+  }
+
+  .ui {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: rgba(255, 255, 255, 0.5);
+    font-family: monospace;
+    font-size: 4rem;
+  }
+
+  .score {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    background: rgba(255, 255, 255, 0.5);
+    font-family: monospace;
+    font-size: 4rem;
+  }
+</style>
+
+<div class="track"></div>
+<div class="ui">START</div>
+<div class="score">0</div>
+<script>
+  document.addEventListener("DOMContentLoaded", function() {
+    // DOM
+    const trackEl = document.querySelector(".track");
+    const ui = document.querySelector(".ui");
+    const score = document.querySelector(".score");
+    const body = document.body;
+
+    function lockScroll() {
+      body.style.overflow = "hidden";
+    }
+
+    function unlockScroll() {
+      body.style.overflow = "";
+    }
+
+    // render functions
+
+    function renderMenu() {
+      trackEl.innerHTML = `
+              <div class="segment">
+                <span class="title">SCROLL RUN</span>
+              </div>
+              <div class="menu">Choose your distance:</div>
+              <button class="segment" data-start="1000">
+                <span class="label">1k</span>
+              </button>
+            `;
+    }
+
+    function renderRun(distance) {
+      let track = `
+            <div class="segment start">
+              <span class="title">START</span>
+            </div>
+            `;
+
+      for (i = 0; i < distance / 100; i++) {
+        track += `
+              <div class="segment d100">
+                <span class="label">${(i + 1) * 100}</span>
+              </div>
+              `;
+      }
+
+      trackEl.innerHTML = track;
+    }
+
+    let count;
+    let startTime;
+    let time;
+    let timeCounter;
+    let checkpoint;
+
+    function initRun(distance) {
+      checkpoint = false;
+      time = 0;
+
+      // TODO: falstart instead of lock? ;)
+      lockScroll();
+      renderRun(distance);
+      initCountdown();
+    }
+
+    function initCountdown() {
+      count = 5;
+
+      function countdown() {
+        if (count) {
+          ui.innerHTML = count;
+          count -= 1;
+          setTimeout(countdown, 1000);
+        } else {
+          startRun();
+        }
+      }
+
+      countdown();
+    }
+
+    function startRun() {
+      unlockScroll();
+
+      ui.innerHTML = "SCROLL!";
+      startTime = Date.now();
+      timeCounter = setInterval(timeTick, 1);
+    }
+
+    function timeTick() {
+      const now = Date.now();
+      time = now - startTime;
+      score.innerHTML = time;
+    }
+
+    window.addEventListener("click", function(event) {
+      const target = event.target.closest("[data-start]");
+
+      if (target) {
+        if (target.dataset["start"]) {
+          initRun(+target.dataset["start"]);
+        }
+      }
+    });
+
+    window.addEventListener("scroll", function(ev) {
+      if (
+        window.innerHeight + window.pageYOffset >=
+        document.body.offsetHeight
+      ) {
+        ui.innerHTML = "SCROLL BACK!";
+        checkpoint = true;
+      }
+      if (window.pageYOffset <= 0 && checkpoint) {
+        ui.innerHTML = "FINISHED!";
+        clearInterval(timeCounter);
+        body.style.overflow = "hidden";
+      }
+    });
+
+    renderMenu();
+  });
+</script>
