@@ -184,6 +184,15 @@
 </div>
 
 <script>
+  function debounce(func, wait) {
+    let timeout;
+
+    return function() {
+      clearTimeout(timeout);
+      timeout = setTimeout(func, wait);
+    };
+  }
+
   document.addEventListener("DOMContentLoaded", function() {
     // DOM
     const trackEl = document.querySelector(".track");
@@ -326,13 +335,13 @@
       startTime = Date.now();
       timeCounter = setInterval(timeTick, 1);
 
-      window.addEventListener("scroll", scrollHandler);
+      window.addEventListener("scroll", debouncedScroll);
     }
 
     function finishRun() {
       clearInterval(timeCounter);
       say(`Finished in ${formatTime(time)}!`);
-      window.removeEventListener("scroll", scrollHandler);
+      window.removeEventListener("scroll", debouncedScroll);
     }
 
     function timeTick() {
@@ -377,6 +386,8 @@
         finishRun();
       }
     }
+
+    const debouncedScroll = debounce(scrollHandler, 500);
 
     function formatTime(ms) {
       return `${ms / 1000}s`
