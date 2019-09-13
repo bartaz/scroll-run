@@ -193,7 +193,26 @@
     };
   }
 
+  function readTopScore() {
+    if (window.localStorage) {
+      try {
+        const score = JSON.parse(window.localStorage.getItem("SCROLL_RUN_SCORE"));
+        return score || {};
+      } catch(e) {
+        return {};
+      }
+    }
+  }
+
+  function saveTopScore(score) {
+    if (window.localStorage) {
+      window.localStorage.setItem("SCROLL_RUN_SCORE", JSON.stringify(score));
+    }
+  }
+
   document.addEventListener("DOMContentLoaded", function() {
+    const topScore = readTopScore();
+
     // DOM
     const trackEl = document.querySelector(".track");
     const bubbleEl = document.querySelector(".bubble");
@@ -275,8 +294,18 @@
     let time;
     let timeCounter;
     let checkpoint;
+    let distance;
+    let finished;
 
-    function initRun(distance) {
+    function initMenu() {
+      hideEl(scoreBoardEl);
+      renderMenu();
+      say("Choose your distance");
+      finished = false;
+    }
+
+    function initRun(dist) {
+      distance = dist;
       checkpoint = false;
       time = 0;
       window.scrollTo(0, 1);
@@ -340,8 +369,18 @@
 
     function finishRun() {
       clearInterval(timeCounter);
-      say(`Finished in ${formatTime(time)}!`);
+
+      if (!topScore[distance] || time < topScore[distance]) {
+        say(`Finished in ${formatTime(time)}!<br/>New record!`);
+        topScore[distance] = time;
+        saveTopScore(topScore);
+      } else {
+        const diff = time - topScore[distance];
+        say(`Finished in ${formatTime(time)}!<br/>${formatTime(diff)} to beat the record.`);
+      }
+
       window.removeEventListener("scroll", debouncedScroll);
+      finished = true;
     }
 
     function timeTick() {
@@ -361,6 +400,11 @@
     }
 
     window.addEventListener("click", function(event) {
+      if (finished) {
+        initMenu();
+        return;
+      }
+
       const target = event.target.closest("[data-start]");
 
       if (target) {
@@ -387,11 +431,11 @@
       }
     }
 
-    const debouncedScroll = debounce(scrollHandler, 500);
+    const debouncedScroll = debounce(scrollHandler, 200);
 
     function formatTime(ms) {
       return `${ms / 1000}s`
     }
-    renderMenu();
+    initMenu();
   });
 </script>
