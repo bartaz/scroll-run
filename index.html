@@ -184,6 +184,11 @@
 </div>
 
 <script>
+  // this code is a messy bunch of functions
+  // didn't have time to clean it up before the deadline, sorry ;)
+
+  // helpers
+
   function debounce(func, wait) {
     let timeout;
 
@@ -192,6 +197,10 @@
       timeout = setTimeout(func, wait);
     };
   }
+
+  function showEl(el) { el.classList.remove("hide"); }
+
+  function hideEl(el) { el.classList.add("hide"); }
 
   function readTopScore() {
     if (window.localStorage) {
@@ -210,6 +219,10 @@
     }
   }
 
+  function randInt(max) { return ~~(Math.random() * max); }
+
+  function formatTime(ms) { return `${ms / 1000}s`; }
+
   document.addEventListener("DOMContentLoaded", function() {
     const topScore = readTopScore();
 
@@ -222,6 +235,7 @@
     let startEl = null;
     let titleEl = null;
 
+    // dom helpers
     function lockScroll() {
       body.style.overflow = "hidden";
     }
@@ -230,45 +244,37 @@
       body.style.overflow = "";
     }
 
-    function showEl(el) {
-      el.classList.remove("hide");
-    }
-
-    function hideEl(el) {
-      el.classList.add("hide");
-    }
-
     // render functions
 
     function renderMenu() {
       trackEl.innerHTML = `
-                      <div class="segment">
-                        <span class="title chalk">SCROLL RUN</span>
-                      </div>
-                      <button class="segment d10" data-start="1000">
-                        <span class="label chalk">1k</span>
-                      </button>
-                      <button class="segment d10" data-start="5000">
-                        <span class="label chalk">5k</span>
-                      </button>
-                      <button class="segment d10" data-start="10000">
-                        <span class="label chalk">10k</span>
-                      </button>
-                      <button class="segment d10" data-start="21097">
-                        <span class="label chalk">21k</span>
-                      </button>
-                      <button class="segment d10" data-start="42195">
-                        <span class="label chalk">42k</span>
-                      </button>
-                    `;
+        <div class="segment">
+          <span class="title chalk">SCROLL RUN</span>
+        </div>
+        <button class="segment d10" data-start="1000">
+          <span class="label chalk">1k</span>
+        </button>
+        <button class="segment d10" data-start="5000">
+          <span class="label chalk">5k</span>
+        </button>
+        <button class="segment d10" data-start="10000">
+          <span class="label chalk">10k</span>
+        </button>
+        <button class="segment d10" data-start="21097">
+          <span class="label chalk">21k</span>
+        </button>
+        <button class="segment d10" data-start="42195">
+          <span class="label chalk">42k</span>
+        </button>
+      `;
     }
 
     function renderRun(distance) {
       let track = `
-                    <div class="segment start d10">
-                      <span class="title chalk">START</span>
-                    </div>
-                    `;
+        <div class="segment start d10">
+          <span class="title chalk">START</span>
+        </div>
+      `;
 
       for (i = 0; i < distance / 100; i++) {
         let segmentDistance = (i + 1) * 100;
@@ -278,10 +284,10 @@
         }
 
         track += `
-                      <div class="segment d100">
-                        <span class="label chalk">${segmentDistance}</span>
-                      </div>
-                      `;
+          <div class="segment d100">
+            <span class="label chalk">${segmentDistance}</span>
+          </div>
+        `;
       }
 
       trackEl.innerHTML = track;
@@ -289,13 +295,18 @@
       titleEl = trackEl.querySelector(".title");
     }
 
-    let count;
-    let startTime;
-    let time;
-    let timeCounter;
-    let checkpoint;
-    let distance;
-    let finished;
+    // game state
+
+    let count; // countdown counter
+    let startTime; // start of the run
+    let time; // current time
+    let timeInterval; // time counting setTnterval ref to clear
+    let checkpoint; // reached the scroll checkpoint ?
+    let distance; // distance of current run
+    let finished; // has run finished
+    let silenceOnScroll; // should scroll silence the comment?
+    let silenceTimeout; // comment silence setTimeout reference to clear
+    let commentTimeout; // comment setTimeout ref to clear
 
     function initMenu() {
       hideEl(scoreBoardEl);
@@ -310,7 +321,6 @@
       time = 0;
       window.scrollTo(0, 1);
 
-      // TODO: falstart instead of lock? ;)
       lockScroll();
       renderRun(distance);
       initCountdown();
@@ -332,7 +342,14 @@
       countdown();
     }
 
-    let silenceTimeout;
+    // comment bubble
+
+    function say(something) {
+      clearTimeout(silenceTimeout);
+      bubbleEl.classList.remove("silent");
+      bubbleEl.innerHTML = something;
+    }
+
     function silence(delay) {
       silenceOnScroll = false;
       clearTimeout(silenceTimeout);
@@ -346,14 +363,6 @@
       }
     }
 
-
-    function say(something) {
-      clearTimeout(silenceTimeout);
-      bubbleEl.classList.remove("silent");
-      bubbleEl.innerHTML = something;
-    }
-
-    let commentTimeout;
     const comments = [
       "Run, Forrest, Run!",
       "Run like you stole something!",
@@ -367,10 +376,6 @@
       "Lorem ipsum!" // aaa, I need to sumbit it soon and I'm out of ideas ;)
     ];
 
-    function randInt(max) {
-      return ~~(Math.random() * max);
-    }
-
     function initComments() {
       function comment() {
         say(comments[randInt(comments.length)]);
@@ -381,8 +386,6 @@
       commentTimeout = setTimeout(comment, 7000 + randInt(5000));
     }
 
-    let silenceOnScroll = false;
-
     function startRun() {
       unlockScroll();
       showEl(scoreBoardEl);
@@ -391,14 +394,14 @@
       silenceOnScroll = true;
 
       startTime = Date.now();
-      timeCounter = setInterval(timeTick, 1);
+      timeInterval = setInterval(timeTick, 1);
 
       window.addEventListener("scroll", debouncedScroll);
       initComments();
     }
 
     function finishRun() {
-      clearInterval(timeCounter);
+      clearInterval(timeInterval);
       clearTimeout(commentTimeout);
 
       if (!topScore[distance] || time < topScore[distance]) {
@@ -466,9 +469,6 @@
 
     const debouncedScroll = debounce(scrollHandler, 200);
 
-    function formatTime(ms) {
-      return `${ms / 1000}s`
-    }
     initMenu();
   });
 </script>
