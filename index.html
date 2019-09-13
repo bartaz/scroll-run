@@ -333,15 +333,16 @@
     }
 
     let silenceTimeout;
-    function silence(immediate) {
+    function silence(delay) {
+      silenceOnScroll = false;
       clearTimeout(silenceTimeout);
 
-      if (immediate) {
+      if (!delay) {
         bubbleEl.classList.add("silent");
       } else {
         silenceTimeout = setTimeout(function(){
           bubbleEl.classList.add("silent");
-        }, 5000);
+        }, delay);
       }
     }
 
@@ -352,23 +353,53 @@
       bubbleEl.innerHTML = something;
     }
 
+    let commentTimeout;
+    const comments = [
+      "Run, Forrest, Run!",
+      "Run like you stole something!",
+      "There will be cake!",
+      "Almost there!",
+      "If only real running was that easy!",
+      "Faster!",
+      "Go! Go! Go!",
+      "You can do it!",
+      "Am I distracting you?",
+      "Lorem ipsum!" // aaa, I need to sumbit it soon and I'm out of ideas ;)
+    ];
+
+    function randInt(max) {
+      return ~~(Math.random() * max);
+    }
+
+    function initComments() {
+      function comment() {
+        say(comments[randInt(comments.length)]);
+        silence(2000 + randInt(3000));
+
+        commentTimeout = setTimeout(comment, 6000 + randInt(5000));
+      }
+      commentTimeout = setTimeout(comment, 7000 + randInt(5000));
+    }
+
     let silenceOnScroll = false;
 
     function startRun() {
       unlockScroll();
       showEl(scoreBoardEl);
       say("Scroll!");
-      silence();
+      silence(5000);
       silenceOnScroll = true;
 
       startTime = Date.now();
       timeCounter = setInterval(timeTick, 1);
 
       window.addEventListener("scroll", debouncedScroll);
+      initComments();
     }
 
     function finishRun() {
       clearInterval(timeCounter);
+      clearTimeout(commentTimeout);
 
       if (!topScore[distance] || time < topScore[distance]) {
         say(`Finished in ${formatTime(time)}!<br/>New record!`);
@@ -390,9 +421,11 @@
     }
 
     function checkpointReached() {
+      clearTimeout(commentTimeout);
       say("Scroll back!");
-      silence();
+      silence(5000);
       silenceOnScroll = true;
+      initComments();
 
       checkpoint = true;
       startEl.classList.add("finish");
@@ -416,7 +449,7 @@
 
     function scrollHandler() {
       if (silenceOnScroll) {
-        silence(true);
+        silence();
         silenceOnScroll = false;
       }
 
